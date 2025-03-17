@@ -1,60 +1,121 @@
-'use strict';
-const {
-  Model, Sequelize,
-  DataTypes
-} = require('sequelize');
+"use strict";
+const { Model, Sequelize, DataTypes } = require("sequelize");
 
-const bcrypt = require('bcrypt');
+const bcrypt = require("bcrypt");
 
-const sequelize = require('../../config/database');
-module.exports = sequelize.define('users', {
-  id: {
-    allowNull: false,
-    autoIncrement: true,
-    primaryKey: true,
-    type: DataTypes.INTEGER
+const sequelize = require("../../config/database");
+const AppError = require("../../utils/appError");
+module.exports = sequelize.define(
+  "users",
+  {
+    id: {
+      allowNull: false,
+      autoIncrement: true,
+      primaryKey: true,
+      type: DataTypes.INTEGER,
+    },
+    userType: {
+      type: DataTypes.ENUM("0", "1", "2"),
+      //allowNull is a mix of validation and constraint so we put it outside of validate object
+      allowNull: false,
+      validate: {
+        notNull: {
+          msg: "UserType cannot be null",
+        },
+        notEmpty: {
+          msg: "userType cannot be empty",
+        },
+      },
+      
+    },
+    firstName: {
+      type: DataTypes.STRING,
+      allowNull: false,
+      validate: {
+        notNull: {
+          msg: "firstName cannot be null",
+        },
+        notEmpty: {
+          msg: "firstName cannot be empty",
+        },
+      },
+    },
+    lastName: {
+      type: DataTypes.STRING,
+      allowNull: false,
+      validate: {
+        notNull: {
+          msg: "lastName cannot be null",
+        },
+        notEmpty: {
+          msg: "lastName cannot be empty",
+        },
+      },
+    },
+    email: {
+      type: DataTypes.STRING,
+      allowNull: false,
+      validate: {
+        notNull: {
+          msg: "email cannot be null",
+        },
+        notEmpty: {
+          msg: "email cannot be empty",
+        },
+        isEmail : {
+          msg: 'Invalid email id'
+        }
+      },
+    },
+    password: {
+      type: DataTypes.STRING,
+      allowNull: false,
+      validate: {
+        notNull: {
+          msg: "Password cannot be null",
+        },
+        notEmpty: {
+          msg: "Password cannot be empty",
+        },
+        // len: {
+        //   args: [8,12],
+        //   msg: "The password must be 8 to 12 characters longs"
+        // }
+
+      },
+    },
+    confirmPassword: {
+      type: DataTypes.VIRTUAL,
+      set(value) {
+        if(this.password.length < 7 ){
+          throw new AppError('Password length must be greater than 7', 400);
+        }
+        if (value === this.password) {
+          const hashPassword = bcrypt.hashSync(value, 10);
+          this.setDataValue("password", hashPassword);
+        } else {
+          throw new AppError(
+            "Password and confirm passwrd must be the same",
+            400
+          );
+        }
+      },
+    },
+    createdAt: {
+      allowNull: false,
+      type: DataTypes.DATE,
+    },
+    updatedAt: {
+      allowNull: false,
+      type: DataTypes.DATE,
+    },
+    deletedAt: {
+      type: DataTypes.DATE,
+    },
   },
-  userType: {
-    type: DataTypes.ENUM('0','1','2'),
-  },
-  firstName: {
-    type: DataTypes.STRING
-  },
-  lastName: {
-    type: DataTypes.STRING
-  },
-  email: {
-    type: DataTypes.STRING
-  },
-  password: {
-    type: DataTypes.STRING
-  },
-  confirmPassword:{
-    type: DataTypes.VIRTUAL,
-    set(value){
-      if(value === this.password){
-        const hashPassword = bcrypt.hashSync(value, 10);
-        this.setDataValue('password', hashPassword);
-      }else {
-        throw new Error(
-          'Password and confirm passwrd must be the same'
-        )
-      }
-    }
-  },
-  createdAt: {
-    allowNull: false,
-    type: DataTypes.DATE
-  },
-  updatedAt: {
-    allowNull: false,
-    type: DataTypes.DATE
-  },
-  deletedAt:{
-    type: DataTypes.DATE
+  {
+    paranoid: true,
+    freezeTableName: true,
+    modelName: "users",
   }
-},{
-  paranoid: true,
-  freezeTableName: true,
-  modelName:'users',
-});
+);
