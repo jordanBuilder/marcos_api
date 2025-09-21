@@ -14,12 +14,12 @@ module.exports = {
         allowNull: false,
       },
       isFeatured: {
-        type: Sequelize.STRING,
+        type: Sequelize.BOOLEAN,
         defaultValue: false,
         allowNull: false,
       },
       productImage: {
-        type: Sequelize.ARRAY(Sequelize.STRING),
+        type: Sequelize.JSON,
         allowNull: false,
       },
       price: {
@@ -39,13 +39,14 @@ module.exports = {
         allowNull: false,
       },
       category: {
-        type: Sequelize.ARRAY(Sequelize.STRING),
+        type: Sequelize.JSON,
       },
       tags: {
-        type: Sequelize.ARRAY(Sequelize.STRING),
+        type: Sequelize.JSON,
       },
       createdBy: {
         type: Sequelize.INTEGER,
+        allowNull:true,
         references: {
           model: "users",
           key: "id",

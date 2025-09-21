@@ -51,8 +51,7 @@ const login = catchAsync(async (req, res, next) => {
   });
 
   if (!result || !(await bcrypt.compare(password, result.password))) {
-    return next(new AppError('Incorrect email or password', 401));
-
+    return next(new AppError("Incorrect email or password", 401));
   }
   const token = genereateToken({
     id: result.id,
@@ -63,4 +62,42 @@ const login = catchAsync(async (req, res, next) => {
     token,
   });
 });
-module.exports = { signup, login };
+
+const authentication = catchAsync(async (req, res, next) => {
+  //1 get the token from headers
+  let idToken = "";
+  if (
+    req.headers.authorization &&
+    req.headers.authorization.startsWith("Bearer")
+  ) {
+    // ex: Bearer tokenString.....
+    idToken = req.headers.authorization.split(" ")[1];
+  }
+  if (!idToken) {
+    return next(new AppError("Please login to get access", 401));
+  }
+  //2 token verification
+  const tokenDetails = jwt.verify(idToken, process.env.JWT_SECRET_KEY);
+  //3 get the user detail from db and add to req object
+  const freshUser = await users.findByPk(tokenDetails.id);
+  if (!freshUser) {
+    return next(new AppError("User no longer exists", 400));
+  }
+  req.user = freshUser;
+  return next();
+});
+
+
+const restrictedTo = (...userType) => {
+  const checkPermission = (req, res, next) => {
+    if (!userType.includes(req.user.userType)) {
+      return next(
+        new AppError("You don't have permission to perform this action ", 403)
+      );
+    }
+    return next();
+  };
+  return checkPermission;
+};
+
+module.exports = { signup, login, authentication, restrictedTo };
